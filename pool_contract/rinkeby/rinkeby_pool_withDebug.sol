@@ -1,10 +1,4 @@
 // SPDX-License-Identifier: MIT 
-// current address: 0x488ceA002dc222564c116190B5B9c7735092C497
-// start capital: 110978469118838715
-
-// Adressen Arbitrum Rinkeby:
-// weth: 0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681
-// dai : 0xC87385b5E62099f92d490750Fcd6C901a524BBcA
 
 pragma solidity ^0.8.7;
 
@@ -17,15 +11,21 @@ contract VFPool is AccessControl{
 
     //------ access setup
 	bytes32 public constant PROVIDER_ROLE = keccak256("Provider");
+    string private contractName = "";
 
 	// swapping
     ISwapRouter private swapRouter;
 	uint24 private constant poolFee = 3000;
 
 	// Rinkeby:
-    address private constant stable = 0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa; //dai
-    address private constant volat = 0xc778417E063141139Fce010982780140Aa0cD5Ab; //weth
-
+    address private stable; 
+    address private volat;
+    
+    // temporär -- addressen hier für schnelleren debug-zugriff
+    address private constant DAIRinkeby = 0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa;
+    address private constant WETHRinkeby = 0xc778417E063141139Fce010982780140Aa0cD5Ab;
+    address private constant USDCRinkeby = 0xeb8f08a975Ab53E34D8a0330E0D34de942C95926;
+    address private constant WBTCRinkeby = 0x577D296678535e4903D59A4C929B718e1D575e0A;
     address private constant DAIRopsten = 0xaD6D458402F60fD3Bd25163575031ACDce07538D;
     address private constant WETH9Ropsten = 0xc778417E063141139Fce010982780140Aa0cD5Ab;
 
@@ -75,10 +75,14 @@ contract VFPool is AccessControl{
     uint256 minDifferenceDown = 5;
 	
 	//------ basic address setup
-	constructor() {
+	constructor(string memory _name, address _stableToken, address _volatToken) {
 	
+        stable = _stableToken;
+        volat = _volatToken;
+        contractName = _name;
+
 		currentId = 0;
-        
+
         swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // Rinkeby and ropsten
         
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -130,7 +134,7 @@ contract VFPool is AccessControl{
     {
         revokeRole(DEFAULT_ADMIN_ROLE, toRemove);
     }
-	
+
 //-----------------------------
 // Oracle functions
 
@@ -176,6 +180,11 @@ contract VFPool is AccessControl{
 //-----------------------------
 // Gettes functions / interaction
 
+    function name() public view returns(string memory)
+    {
+        return contractName;
+    }
+
     function _getPrice(address _token) public view returns(uint256)
     {
         return IERC20(_token).balanceOf(address(this));
@@ -215,6 +224,16 @@ contract VFPool is AccessControl{
     {
         return advices[_id-1];
     }
+
+    function _getStableAddress() public view returns(address)
+    {
+        return stable;
+    }
+
+    function _getVolatAddress() public view returns(address){
+        return volat;
+    }
+
 //-----------------------------
 // Pool functions
 
@@ -253,7 +272,6 @@ contract VFPool is AccessControl{
         {
             return false;
         }
-
     }
 
     // vorher public payable, vlt wieder ändern
@@ -271,7 +289,7 @@ contract VFPool is AccessControl{
         //Dedug
         advices.push(lastAdvice);
 
-        bytes32 recom = keccak256(abi.encodePacked(evaluateLatestMovement()));
+        bytes32 recom = keccak256(abi.encodePacked(lastAdvice));
 
         //für aktuell erstmal: komplette kapital des einen token swappen
 		if (recom == keccak256(abi.encodePacked("buy"))) {
@@ -297,8 +315,6 @@ contract VFPool is AccessControl{
 			startTransfer = false;
         }
 
-		
-
         return (startTransfer, tokenIN, tokenOUT, amount);
     }
 
@@ -310,7 +326,7 @@ contract VFPool is AccessControl{
         bool toReturn = false;
 
 		// neue Daten in Price-List schreiben
-		execRequest("DAI/WETH");
+		execRequest(contractName);
         
         // Get values from investmentStrat
         (
