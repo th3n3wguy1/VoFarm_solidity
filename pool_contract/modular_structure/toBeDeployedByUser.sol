@@ -10,12 +10,12 @@ contract Trader is AccessControl{
 
     uint256[] prices;
 
-    uint256 lastXPrices = 1;
-    uint256 minPrices = 1;
-    uint256 minDifferenceUp = 5;
-    uint256 minDifferenceDown = 5;
-    uint256 minStableDeposit = 1;
-    uint256 minVolatileDeposit = 1;
+    uint256 lastXPrices = 4;
+    uint256 minPrices = 4;
+    uint256 minDifferenceUp = 17000000000000000000;
+    uint256 minDifferenceDown = 17000000000000000000;
+    uint256 minStableDeposit = 10;
+    uint256 minVolatileDeposit = 10;
 
     bytes32 public constant PROVIDER_ROLE = keccak256("Provider");
     VoFarmPool voFarm;
